@@ -1,18 +1,29 @@
-#include "hal/gpio.h"
+#include "hal/pins.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 static void runCommand(char* command);
 
-void GPIO_configPinForGPIO(int header, int pin) {
+void Pins_configPinForGPIO(int header, int pin) {
     char buffer[64];
     sprintf(buffer, "config-pin p%d.%d gpio", header, pin);
     runCommand(buffer);
 }
 
-void GPIO_configPinForInput(int linuxPin) {
+void Pins_configPinForI2C(int header, int pin) {
     char buffer[64];
-    sprintf(buffer, "echo in > /sys/class/gpio/gpio%d/direction", linuxPin);
+    sprintf(buffer, "config-pin p%d.%d i2c", header, pin);
+    runCommand(buffer);
+}
+
+void Pins_configPinDirection(int linuxPin, bool isInput) {
+    char buffer[64];
+    if(isInput) {
+        sprintf(buffer, "echo in > /sys/class/gpio/gpio%d/direction", linuxPin);
+    }
+    else {
+        sprintf(buffer, "echo out > /sys/class/gpio/gpio%d/direction", linuxPin);
+    }
     runCommand(buffer);
 }
 

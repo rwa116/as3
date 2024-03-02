@@ -7,7 +7,9 @@
 #include "beatGenerator.h"
 #include "hal/joystick.h"
 #include "hal/audioMixer.h"
+#include "hal/accelerometer.h"
 
+// static long long getTimeInMs(void);
 static void sleepForMs(long long delayInMs);
 
 static _Atomic bool isRunning = true;
@@ -29,6 +31,7 @@ enum joy_direction StateReader_getJoystickValue(void) {
     return pressedDirection;
 }
 
+#define GRAVITY 16384
 static void *stateThread(void *arg) {
     (void)arg;
 
@@ -52,7 +55,7 @@ static void *stateThread(void *arg) {
             case LEFT:
             {
                 int currentBpm = BeatGenerator_getBpm();
-                BeatGenerator_setBpm(currentBpm <= 5 ? 0 : currentBpm - 5);
+                BeatGenerator_setBpm(currentBpm <= 45 ? 40 : currentBpm - 5);
                 sleepForMs(200);
                 break;
             }
@@ -63,9 +66,31 @@ static void *stateThread(void *arg) {
                 sleepForMs(200);
                 break;
             }
+            case IN:
+            {
+                int currentBeat = BeatGenerator_getBeat();
+                BeatGenerator_setBeat(currentBeat >= 2 ? 0 : currentBeat + 1);
+                sleepForMs(200);
+                break;
+            }
             default:
                 break;
         }
+        #define THRESHOLD 16000
+        struct accel_values accelValues = Accelerometer_readValues();
+        if((accelValues.valX > THRESHOLD) || (accelValues.valX < -THRESHOLD)) {
+            BeatGenerator_requestAudio(SNARE);
+                sleepForMs(200);
+        }
+        if((accelValues.valY > THRESHOLD) || (accelValues.valY < -THRESHOLD)) {
+            BeatGenerator_requestAudio(BASE_DRUM);
+                sleepForMs(200);
+        }
+        if((accelValues.valZ > THRESHOLD + GRAVITY) || (accelValues.valZ < -THRESHOLD + GRAVITY)) {
+            BeatGenerator_requestAudio(HI_HAT);
+                sleepForMs(200);
+        }
+
         sleepForMs(10);
     }
 
@@ -81,3 +106,13 @@ static void sleepForMs(long long delayInMs) {
     struct timespec reqDelay = {seconds, nanoseconds};
     nanosleep(&reqDelay, (struct timespec *) NULL);
 }
+
+// static long long getTimeInMs(void) {
+//     struct timespec spec;
+//     clock_gettime(CLOCK_REALTIME, &spec);
+//     long long seconds = spec.tv_sec;
+//     long long nanoSeconds = spec.tv_nsec;
+//     long long milliSeconds = seconds * 1000
+//     + nanoSeconds / 1000000;
+//     return milliSeconds;
+// }

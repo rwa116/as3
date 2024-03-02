@@ -1,5 +1,5 @@
 #include "hal/joystick.h"
-#include "hal/gpio.h"
+#include "hal/pins.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -19,21 +19,24 @@ static const struct direction_info directionInfo[] = {
     {RIGHT, 47, GPIO_DIRECTORY "gpio47/value"},
     {DOWN, 46, GPIO_DIRECTORY "gpio46/value"},
     {LEFT, 65, GPIO_DIRECTORY "gpio65/value"},
+    {IN, 27, GPIO_DIRECTORY "gpio27/value"},
 };
 
 #define HEADER_8 8
 void Joystick_init(void) {
     // Configure pins for GPIO
-    GPIO_configPinForGPIO(HEADER_8, 14);
-    GPIO_configPinForGPIO(HEADER_8, 15);
-    GPIO_configPinForGPIO(HEADER_8, 16);
-    GPIO_configPinForGPIO(HEADER_8, 18);
+    Pins_configPinForGPIO(HEADER_8, 14);
+    Pins_configPinForGPIO(HEADER_8, 15);
+    Pins_configPinForGPIO(HEADER_8, 16);
+    Pins_configPinForGPIO(HEADER_8, 17);
+    Pins_configPinForGPIO(HEADER_8, 18);
 
     // Configure pins for Input
-    GPIO_configPinForInput(directionInfo[UP].pinNumber);
-    GPIO_configPinForInput(directionInfo[RIGHT].pinNumber);
-    GPIO_configPinForInput(directionInfo[DOWN].pinNumber);
-    GPIO_configPinForInput(directionInfo[LEFT].pinNumber);
+    Pins_configPinDirection(directionInfo[UP].pinNumber, true);
+    Pins_configPinDirection(directionInfo[RIGHT].pinNumber, true);
+    Pins_configPinDirection(directionInfo[DOWN].pinNumber, true);
+    Pins_configPinDirection(directionInfo[LEFT].pinNumber, true);
+    Pins_configPinDirection(directionInfo[IN].pinNumber, true);
 }
 
 void Joystick_cleanup(void) {
@@ -42,7 +45,7 @@ void Joystick_cleanup(void) {
 
 enum joy_direction Joystick_getPressedDirection(void) {
     char* pressedBuffer = malloc(1024);
-    for(enum joy_direction direction = UP; direction <= LEFT; direction++) { // iterate through all 4 directions
+    for(enum joy_direction direction = UP; direction <= IN; direction++) { // iterate through all 4 directions
         getValue(direction, pressedBuffer);
         if(pressedBuffer[0] == '0') {
             return direction;

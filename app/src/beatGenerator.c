@@ -68,13 +68,25 @@ void BeatGenerator_setBpm(int newBpm) {
     bpm = newBpm;
 }
 
+int BeatGenerator_getBeat(void) {
+    return beat;
+}
+
+void BeatGenerator_setBeat(int newBeat) {
+    if (newBeat < 0 || newBeat > 2) {
+        printf("ERROPR: Beat must be between 0 and 2.\n");
+        return;
+    }
+    beat = newBeat;
+}
+
 static void *beatThread(void *arg) {
     (void)arg;
     while(isRunning) {
-        printf("Current BPM = %d, current volume = %d\n", bpm, AudioMixer_getVolume());
+        //printf("Current BPM = %d, current volume = %d\n", bpm, AudioMixer_getVolume());
         switch(beat) {
             case 0: // Off
-                sleepForMs(1000);
+                sleepForMs(100);
                 break;
             case 1: // Standard Beat 
             {
@@ -98,7 +110,24 @@ static void *beatThread(void *arg) {
                 break;
             }
             case 2: // New beat
+            {
+                for(int i=0; i<2; i++) {
+                    int msToSleep = 60000 / bpm / 2;
+                    // Beat 1 / 3
+                    AudioMixer_queueSound(&snareData);
+                    sleepForMs(msToSleep);
+                    // Beat 1.5 / 3.5
+                    AudioMixer_queueSound(&snareData);
+                    sleepForMs(msToSleep);
+                    // Beat 2 / 4
+                    AudioMixer_queueSound(&baseDrumData);
+                    sleepForMs(msToSleep);
+                    // Beat 2.5 / 4.5
+                    AudioMixer_queueSound(&baseDrumData);
+                    sleepForMs(msToSleep);
+                }
                 break;
+            }
             default:
                 printf("Error: invalid beat select, only 0, 1, 2 are valid.\n");
                 sleepForMs(1000);

@@ -4,8 +4,11 @@
 
 #include "hal/audioMixer.h"
 #include "hal/joystick.h"
+#include "hal/accelerometer.h"
+#include "hal/periodTimer.h"
 #include "beatGenerator.h"
 #include "stateReader.h"
+#include "statistics.h"
 
 // static void sleepForMs(long long delayInMs) {
 //     const long long NS_PER_MS = 1000 * 1000;
@@ -19,13 +22,15 @@
 
 int main() {
     
+    Period_init();
     AudioMixer_init();
     Joystick_init();
+    Accelerometer_init();
     BeatGenerator_init();
     StateReader_init();
+    Statistics_init();
     
     while(1) {
-        // sleepForMs(750);
         // BeatGenerator_requestAudio(SNARE);
         // sleepForMs(250);
         // BeatGenerator_requestAudio(HI_HAT);
@@ -33,10 +38,13 @@ int main() {
         // BeatGenerator_requestAudio(HI_HAT);
     }
 
+    Statistics_cleanup();
     StateReader_cleanup();
     BeatGenerator_cleanup();
+    Accelerometer_cleanup();
     Joystick_cleanup();
     AudioMixer_cleanup();
+    Period_cleanup();
 
     return 0;
 }

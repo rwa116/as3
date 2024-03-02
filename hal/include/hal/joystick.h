@@ -11,6 +11,7 @@ enum joy_direction {
     RIGHT,
     DOWN,
     LEFT,
+    IN,
     NO_DIRECTION
 };
 

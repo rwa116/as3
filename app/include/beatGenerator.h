@@ -19,5 +19,7 @@ void BeatGenerator_requestAudio(enum AudioClip clipType);
 
 int BeatGenerator_getBpm(void);
 void BeatGenerator_setBpm(int newBpm);
+int BeatGenerator_getBeat(void);
+void BeatGenerator_setBeat(int newBeat);
 
 #endif
