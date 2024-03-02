@@ -5,4 +5,19 @@
 #ifndef BEAT_GENERATOR_H
 #define BEAT_GENERATOR_H
 
+enum AudioClip {
+    BASE_DRUM,
+    HI_HAT,
+    SNARE,
+    NUM_CLIPS
+};
+
+void BeatGenerator_init(void);
+void BeatGenerator_cleanup(void);
+
+void BeatGenerator_requestAudio(enum AudioClip clipType);
+
+int BeatGenerator_getBpm(void);
+void BeatGenerator_setBpm(int newBpm);
+
 #endif
