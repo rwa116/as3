@@ -130,6 +130,9 @@ void AudioMixer_readWaveFileIntoMemory(char *fileName, wavedata_t *pSound)
 				pSound->numSamples, fileName, samplesRead);
 		exit(EXIT_FAILURE);
 	}
+
+	//Close the wave file
+	fclose(file);
 }
 
 void AudioMixer_freeWaveFileData(wavedata_t *pSound)
@@ -141,6 +144,10 @@ void AudioMixer_freeWaveFileData(wavedata_t *pSound)
 
 void AudioMixer_queueSound(wavedata_t *pSound)
 {
+	// Check if we are stopping, if we are, cannot queue sound
+	if(stopping) {
+		return;
+	}
 	// Ensure we are only being asked to play "good" sounds:
 	assert(pSound->numSamples > 0);
 	assert(pSound->pData);
@@ -181,6 +188,12 @@ void AudioMixer_queueSound(wavedata_t *pSound)
 void AudioMixer_cleanup(void)
 {
 	printf("Stopping audio...\n");
+
+	for(int ind = 0; ind > MAX_SOUND_BITES; ind++) {
+		if(soundBites[ind].pSound == NULL) {
+			free(soundBites[ind].pSound);
+		}
+	}
 
 	// Stop the PCM generation thread
 	stopping = true;

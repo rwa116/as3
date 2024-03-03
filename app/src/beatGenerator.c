@@ -23,6 +23,8 @@ static wavedata_t snareData;
 
 static void *beatThread(void *arg);
 static pthread_t beatThreadId;
+static pthread_mutex_t volumeLock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t tempoLock = PTHREAD_MUTEX_INITIALIZER;
 
 static void sleepForMs(long long delayInMs);
 
@@ -37,6 +39,9 @@ void BeatGenerator_init(void) {
 void BeatGenerator_cleanup(void) {
     isRunning = false;
     pthread_join(beatThreadId, NULL);
+    AudioMixer_freeWaveFileData(&baseDrumData);
+    AudioMixer_freeWaveFileData(&hiHatData);
+    AudioMixer_freeWaveFileData(&snareData);
 }
 
 void BeatGenerator_requestAudio(enum AudioClip clipType) {
@@ -57,15 +62,45 @@ void BeatGenerator_requestAudio(enum AudioClip clipType) {
 }
 
 int BeatGenerator_getBpm(void) {
-    return bpm;
+    int fetchedBpm;
+    pthread_mutex_lock(&tempoLock);
+    fetchedBpm = bpm;
+    pthread_mutex_unlock(&tempoLock);
+    return fetchedBpm;
 }
 
-void BeatGenerator_setBpm(int newBpm) {
-    if (newBpm < BPM_MIN || newBpm > BPM_MAX) {
-		printf("ERROR: BPM must be between 40 and 300.\n");
-		return;
-	}
-    bpm = newBpm;
+void BeatGenerator_incrementBpm(void) {
+    pthread_mutex_lock(&tempoLock);
+    bpm = bpm >= 295 ? 300 : bpm + 5;
+    pthread_mutex_unlock(&tempoLock);
+}
+
+void BeatGenerator_decrementBpm(void) {
+    pthread_mutex_lock(&tempoLock);
+    bpm = bpm <= 45 ? 40 : bpm - 5;
+    pthread_mutex_unlock(&tempoLock);
+}
+
+
+int BeatGenerator_getVolume(void) {
+    pthread_mutex_lock(&volumeLock);
+    int currentVol = AudioMixer_getVolume();
+    pthread_mutex_unlock(&volumeLock);
+    return currentVol;
+}
+
+void BeatGenerator_incrementVolume(void) {
+    pthread_mutex_lock(&volumeLock);
+    int currentVol = AudioMixer_getVolume();
+    AudioMixer_setVolume(currentVol >= 95 ? 100 : currentVol + 5);
+    pthread_mutex_unlock(&volumeLock);
+}
+
+void BeatGenerator_decrementVolume(void) {
+    pthread_mutex_lock(&volumeLock);
+    int currentVol = AudioMixer_getVolume();
+    AudioMixer_setVolume(currentVol <= 5 ? 0 : currentVol - 5);
+    pthread_mutex_unlock(&volumeLock);
 }
 
 int BeatGenerator_getBeat(void) {
@@ -90,42 +125,38 @@ static void *beatThread(void *arg) {
                 break;
             case 1: // Standard Beat 
             {
-                for(int i=0; i<2; i++) {
-                    int msToSleep = 60000 / bpm / 2;
-                    // Beat 1 / 3
-                    AudioMixer_queueSound(&baseDrumData);
-                    AudioMixer_queueSound(&hiHatData);
-                    sleepForMs(msToSleep);
-                    // Beat 1.5 / 3.5
-                    AudioMixer_queueSound(&hiHatData);
-                    sleepForMs(msToSleep);
-                    // Beat 2 / 4
-                    AudioMixer_queueSound(&hiHatData);
-                    AudioMixer_queueSound(&snareData);
-                    sleepForMs(msToSleep);
-                    // Beat 2.5 / 4.5
-                    AudioMixer_queueSound(&hiHatData);
-                    sleepForMs(msToSleep);
-                }
+                int msToSleep = 60000 / bpm / 2;
+                // Beat 1 / 3
+                AudioMixer_queueSound(&baseDrumData);
+                AudioMixer_queueSound(&hiHatData);
+                sleepForMs(msToSleep);
+                // Beat 1.5 / 3.5
+                AudioMixer_queueSound(&hiHatData);
+                sleepForMs(msToSleep);
+                // Beat 2 / 4
+                AudioMixer_queueSound(&hiHatData);
+                AudioMixer_queueSound(&snareData);
+                sleepForMs(msToSleep);
+                // Beat 2.5 / 4.5
+                AudioMixer_queueSound(&hiHatData);
+                sleepForMs(msToSleep);
                 break;
             }
             case 2: // New beat
             {
-                for(int i=0; i<2; i++) {
-                    int msToSleep = 60000 / bpm / 2;
-                    // Beat 1 / 3
-                    AudioMixer_queueSound(&snareData);
-                    sleepForMs(msToSleep);
-                    // Beat 1.5 / 3.5
-                    AudioMixer_queueSound(&snareData);
-                    sleepForMs(msToSleep);
-                    // Beat 2 / 4
-                    AudioMixer_queueSound(&baseDrumData);
-                    sleepForMs(msToSleep);
-                    // Beat 2.5 / 4.5
-                    AudioMixer_queueSound(&baseDrumData);
-                    sleepForMs(msToSleep);
-                }
+                int msToSleep = 60000 / bpm / 2;
+                // Beat 1 / 3
+                AudioMixer_queueSound(&snareData);
+                sleepForMs(msToSleep);
+                // Beat 1.5 / 3.5
+                AudioMixer_queueSound(&snareData);
+                sleepForMs(msToSleep);
+                // Beat 2 / 4
+                AudioMixer_queueSound(&baseDrumData);
+                sleepForMs(msToSleep);
+                // Beat 2.5 / 4.5
+                AudioMixer_queueSound(&baseDrumData);
+                sleepForMs(msToSleep);
                 break;
             }
             default:

@@ -7,6 +7,10 @@ add_executable(wave_player_cmake ${MY_SOURCES})
 # Make use of the HAL library
 target_link_libraries(wave_player_cmake LINK_PRIVATE hal)
 
+# Link pthread library
+find_package(Threads REQUIRED)
+target_link_libraries(wave_player_cmake PRIVATE Threads::Threads)
+
 # ---------------- NEW! ----------------
 # ALSA support
 find_package(ALSA REQUIRED)
@@ -31,3 +35,10 @@ add_custom_command(TARGET wave_player_cmake POST_BUILD
      "${CMAKE_SOURCE_DIR}/beatbox-wav-files"
      "~/cmpt433/public/myApps/beatbox-wav-files" 
   COMMENT "Copying WAVE files to public NFS directory")
+
+set(SERVER_MAKEFILE_DIR "${CMAKE_SOURCE_DIR}/beatbox-server")
+
+add_custom_command(TARGET wave_player_cmake POST_BUILD 
+  COMMAND "make" 
+  WORKING_DIRECTORY ${SERVER_MAKEFILE_DIR}
+  COMMENT "Copying Node server files to public NFS directory")

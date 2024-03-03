@@ -40,29 +40,25 @@ static void *stateThread(void *arg) {
         switch(pressedDirection) {
             case UP:
             {
-                int currentVolume = AudioMixer_getVolume();
-                AudioMixer_setVolume(currentVolume >= 95 ? 100 : currentVolume + 5);
+                BeatGenerator_incrementVolume();
                 sleepForMs(200);
                 break;
             }
             case DOWN:
             {
-                int currentVolume = AudioMixer_getVolume();
-                AudioMixer_setVolume(currentVolume <= 5 ? 0 : currentVolume - 5);
+                BeatGenerator_decrementVolume();
                 sleepForMs(200);
                 break;
             }
             case LEFT:
             {
-                int currentBpm = BeatGenerator_getBpm();
-                BeatGenerator_setBpm(currentBpm <= 45 ? 40 : currentBpm - 5);
+                BeatGenerator_decrementBpm();
                 sleepForMs(200);
                 break;
             }
             case RIGHT:
             {
-                int currentBpm = BeatGenerator_getBpm();
-                BeatGenerator_setBpm(currentBpm >= 295 ? 300 : currentBpm + 5);
+                BeatGenerator_incrementBpm();
                 sleepForMs(200);
                 break;
             }

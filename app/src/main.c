@@ -9,6 +9,8 @@
 #include "beatGenerator.h"
 #include "stateReader.h"
 #include "statistics.h"
+#include "network.h"
+#include "shutdown.h"
 
 // static void sleepForMs(long long delayInMs) {
 //     const long long NS_PER_MS = 1000 * 1000;
@@ -29,15 +31,13 @@ int main() {
     BeatGenerator_init();
     StateReader_init();
     Statistics_init();
+    Network_init();
+    Shutdown_init();
     
-    while(1) {
-        // BeatGenerator_requestAudio(SNARE);
-        // sleepForMs(250);
-        // BeatGenerator_requestAudio(HI_HAT);
-        // sleepForMs(250);
-        // BeatGenerator_requestAudio(HI_HAT);
-    }
-
+    Shutdown_waitForShutdown();
+    
+    Shutdown_cleanup();
+    Network_cleanup();
     Statistics_cleanup();
     StateReader_cleanup();
     BeatGenerator_cleanup();
