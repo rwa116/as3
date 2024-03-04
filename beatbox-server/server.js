@@ -65,6 +65,6 @@ function sendFile(response, filePath, fileContents) {
 /*
  * Create the Userver to listen for the websocket
  */
-var udpServer = require('./lib/udp_server');
+var udpServer = require('./lib/beatbox_server');
 udpServer.listen(server);
 

@@ -9,7 +9,7 @@
 #include "hal/audioMixer.h"
 #include "hal/accelerometer.h"
 
-// static long long getTimeInMs(void);
+static long long getTimeInMs(void);
 static void sleepForMs(long long delayInMs);
 
 static _Atomic bool isRunning = true;
@@ -35,56 +35,72 @@ enum joy_direction StateReader_getJoystickValue(void) {
 static void *stateThread(void *arg) {
     (void)arg;
 
+    long long lastTimePressedUp = 0;
+    long long lastTimePressedDown = 0;
+    long long lastTimePressedLeft = 0;
+    long long lastTimePressedRight = 0;
+    long long lastTimePressedIn = 0;
+
+    long long lastTimeAccelX = 0;
+    long long lastTimeAccelY = 0;
+    long long lastTimeAccelZ = 0;
+
     while(isRunning) {
         pressedDirection = Joystick_getPressedDirection();
+        long long currentTime = getTimeInMs();
         switch(pressedDirection) {
             case UP:
-            {
-                BeatGenerator_incrementVolume();
-                sleepForMs(200);
+                if(currentTime - lastTimePressedUp > 200) {
+                    BeatGenerator_incrementVolume();
+                    lastTimePressedUp = currentTime;
+                }
                 break;
-            }
             case DOWN:
-            {
-                BeatGenerator_decrementVolume();
-                sleepForMs(200);
+                if(currentTime - lastTimePressedDown > 200) {
+                    BeatGenerator_decrementVolume();
+                    lastTimePressedDown = currentTime;
+                }
                 break;
-            }
             case LEFT:
-            {
-                BeatGenerator_decrementBpm();
-                sleepForMs(200);
+                if(currentTime - lastTimePressedLeft > 200) {
+                    BeatGenerator_decrementBpm();
+                    lastTimePressedLeft = currentTime;
+                }
                 break;
-            }
             case RIGHT:
-            {
-                BeatGenerator_incrementBpm();
-                sleepForMs(200);
+                if(currentTime - lastTimePressedRight > 200) {
+                    BeatGenerator_incrementBpm();
+                    lastTimePressedRight = currentTime;
+                }
                 break;
-            }
             case IN:
-            {
-                int currentBeat = BeatGenerator_getBeat();
-                BeatGenerator_setBeat(currentBeat >= 2 ? 0 : currentBeat + 1);
-                sleepForMs(200);
+                if(currentTime - lastTimePressedIn > 200) {
+                    int currentBeat = BeatGenerator_getBeat();
+                    BeatGenerator_setBeat(currentBeat >= 2 ? 0 : currentBeat + 1);
+                    lastTimePressedIn = currentTime;
+                }
                 break;
-            }
             default:
                 break;
         }
-        #define THRESHOLD 16000
+        #define THRESHOLD 24000
+        #define Z_POS_THRESHOLD 32000
+        #define Z_NEG_THRESHOLD 8000
         struct accel_values accelValues = Accelerometer_readValues();
-        if((accelValues.valX > THRESHOLD) || (accelValues.valX < -THRESHOLD)) {
+        if(((accelValues.valX > THRESHOLD) || (accelValues.valX < -THRESHOLD)) 
+            && (currentTime - lastTimeAccelX > 250)) {
             BeatGenerator_requestAudio(SNARE);
-                sleepForMs(200);
+            lastTimeAccelX = currentTime;
         }
-        if((accelValues.valY > THRESHOLD) || (accelValues.valY < -THRESHOLD)) {
+        else if(((accelValues.valY > THRESHOLD) || (accelValues.valY < -THRESHOLD)) 
+            && (currentTime - lastTimeAccelY > 250)) {
             BeatGenerator_requestAudio(BASE_DRUM);
-                sleepForMs(200);
+            lastTimeAccelY = currentTime;
         }
-        if((accelValues.valZ > THRESHOLD + GRAVITY) || (accelValues.valZ < -THRESHOLD + GRAVITY)) {
+        else if(((accelValues.valZ > Z_POS_THRESHOLD) || (accelValues.valZ < -THRESHOLD)) 
+            && (currentTime - lastTimeAccelZ > 250)) {
             BeatGenerator_requestAudio(HI_HAT);
-                sleepForMs(200);
+            lastTimeAccelZ = currentTime;
         }
 
         sleepForMs(10);
@@ -103,12 +119,12 @@ static void sleepForMs(long long delayInMs) {
     nanosleep(&reqDelay, (struct timespec *) NULL);
 }
 
-// static long long getTimeInMs(void) {
-//     struct timespec spec;
-//     clock_gettime(CLOCK_REALTIME, &spec);
-//     long long seconds = spec.tv_sec;
-//     long long nanoSeconds = spec.tv_nsec;
-//     long long milliSeconds = seconds * 1000
-//     + nanoSeconds / 1000000;
-//     return milliSeconds;
-// }
+static long long getTimeInMs(void) {
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    long long seconds = spec.tv_sec;
+    long long nanoSeconds = spec.tv_nsec;
+    long long milliSeconds = seconds * 1000
+    + nanoSeconds / 1000000;
+    return milliSeconds;
+}

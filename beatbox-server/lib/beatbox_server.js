@@ -19,8 +19,8 @@ exports.listen = function(server) {
 
 function handleCommand(socket) {
 	// Pased string of comamnd to relay
-	socket.on('daUdpCommand', function(data) {
-		console.log('daUdpCommand command: ' + data);
+	socket.on('UdpCommand', function(data) {
+		console.log('UdpCommand command: ' + data);
 
 		// Info for connecting to the local process via UDP
 		var PORT = 12345;

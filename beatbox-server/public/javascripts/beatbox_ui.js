@@ -58,7 +58,6 @@ $(document).ready(function() {
 	
 	socket.on('commandReply', function(result) {
 		var splitRes = result.split(",");
-		// clearTimeout(requestTimeout);
 
 		var domObj;
 		switch(splitRes[0]) {
@@ -98,10 +97,5 @@ $(document).ready(function() {
 });
 
 function sendCommandViaUDP(message) {
-	socket.emit('daUdpCommand', message);
-
-	// clearTimeout(requestTimeout);
-	// requestTimeout = setTimeout(function() {
-	// 	$('#error-box').show();
-	// }, 3000)
+	socket.emit('UdpCommand', message);
 };
