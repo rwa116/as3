@@ -34,6 +34,15 @@ function handleCommand(socket) {
 			console.log('UDP message sent to ' + HOST +':'+ PORT);
 		});
 
+		var requestTimeout = true;
+
+		var timeout = setTimeout(function() {
+			if(requestTimeout) {
+				socket.emit('commandReply', "noreply");
+				client.close();
+			}
+		}, 1000)
+
 		client.on('listening', function () {
 			var address = client.address();
 			console.log('UDP Client: listening on ' + address.address + ":" + address.port);
@@ -44,7 +53,9 @@ function handleCommand(socket) {
 
 			var reply = message.toString('utf8')
 			socket.emit('commandReply', reply);
-
+	
+			var requestTimeout = false;
+			clearTimeout(timeout);
 			client.close();
 
 		});

@@ -25,6 +25,10 @@ enum Command {
     PLAY_SNARE,
     PLAY_BASE,
     TERMINATE,
+    GET_UPTIME,
+    GET_VOL,
+    GET_TEMPO,
+    GET_BEAT,
     UNKNOWN
 };
 
@@ -34,6 +38,7 @@ static _Atomic bool isRunning;
 static void *listenLoop(void *arg);
 static enum Command checkCommand(char* input);
 static void sendReply(enum Command command, int socketDescriptor, struct sockaddr_in *sinRemote);
+static int getUptime(void);
 
 void Network_init(void) {
     isRunning = true;
@@ -117,6 +122,18 @@ static enum Command checkCommand(char* input) {
     else if(strcmp(input, "terminate") == 0) {
         return TERMINATE;
     }
+    else if(strcmp(input, "uptime") == 0) {
+        return GET_UPTIME;
+    }
+    else if(strcmp(input, "volume") == 0) {
+        return GET_VOL;
+    }
+    else if(strcmp(input, "tempo") == 0) {
+        return GET_TEMPO;
+    }
+    else if(strcmp(input, "mode") == 0) {
+        return GET_BEAT;
+    }
     else {
         return UNKNOWN;
     }
@@ -184,6 +201,43 @@ static void sendReply(enum Command command, int socketDescriptor, struct sockadd
             Shutdown_signalShutdown();
             snprintf(messageTx, MAX_LEN, "terminate,");
             break;
+        case GET_UPTIME:
+        {
+            int uptime = getUptime();
+            int hours = uptime / 3600;
+            int minutes = (uptime / 60) % 60;
+            int seconds = uptime % 60;
+            snprintf(messageTx, MAX_LEN, "uptime,%d,%d,%d", hours, minutes, seconds);
+            break;
+        }
+        case GET_VOL:
+        {
+            int vol = BeatGenerator_getVolume();
+            snprintf(messageTx, MAX_LEN, "volumeid,%d", vol);
+            break;
+        }
+        case GET_TEMPO:
+        {
+            int bpm = BeatGenerator_getBpm();
+            snprintf(messageTx, MAX_LEN, "tempoid,%d", bpm);
+            break;
+        }
+        case GET_BEAT:
+        {
+            int beat = BeatGenerator_getBeat();
+            switch(beat) {
+                case 1:
+                    snprintf(messageTx, MAX_LEN, "modeid,Rock #1");
+                    break;
+                case 2:
+                    snprintf(messageTx, MAX_LEN, "modeid,Rock #2");
+                    break;
+                default:
+                    snprintf(messageTx, MAX_LEN, "modeid,None");
+                    break;
+            }
+            break;
+        }
         case UNKNOWN:
             snprintf(messageTx, MAX_LEN, "Unknown command.\n");
             break;
@@ -195,4 +249,27 @@ static void sendReply(enum Command command, int socketDescriptor, struct sockadd
     sinLen = sizeof(*sinRemote);
     sendto(socketDescriptor, messageTx, strlen(messageTx), 0, 
         (struct sockaddr*) sinRemote, sinLen);
+}
+
+#define UPTIME_FILE_PATH "/proc/uptime"
+static int getUptime(void) {
+    char buff[32];
+    FILE* file = fopen(UPTIME_FILE_PATH, "r");
+    if (file == NULL) {
+        printf("ERROR: Unable to open file (%s) for read\n", UPTIME_FILE_PATH);
+        exit(-1);
+    }
+
+    const int MAX_LENGTH = 1024;
+    fgets(buff, MAX_LENGTH, file);
+    char* uptime = strtok(buff, " ");
+    if(uptime == NULL) {
+        perror("Failed to fetch uptime or resolve uptime.\n");
+        fclose(file);
+        return -1;
+    }
+    int seconds = (int)atof(uptime);
+
+    fclose(file);
+    return seconds;
 }

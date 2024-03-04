@@ -1,11 +1,17 @@
 "use strict";
 // Client-side interactions with the browser.
 
+// Timeout flag for connection to application
+var requestTimeout = false;
+
 // Make connection to server when web page is fully loaded.
 var socket = io.connect();
 $(document).ready(function() {
 
-	//window.setInterval(function() {sendRequest('modeid')}, 1000)
+	window.setInterval(function() {sendCommandViaUDP('uptime')}, 1000)
+	window.setInterval(function() {sendCommandViaUDP('tempo')}, 1000)
+	window.setInterval(function() {sendCommandViaUDP('volume')}, 1000)
+	window.setInterval(function() {sendCommandViaUDP('mode')}, 1000)
 
 	$('#modeNone').click(function(){
 		sendCommandViaUDP("mode 0");
@@ -40,15 +46,33 @@ $(document).ready(function() {
 	$('#stop').click(function(){
 		sendCommandViaUDP("terminate");
 	});
+
+	socket.on('disconnect', () => {
+		$('#error-box').show();
+		$('#error-text').html("NodeJS server is no longer running on the target.");
+	})
+
+	socket.on('reconnect', () => {
+		$('#error-box').hide();
+	})
 	
 	socket.on('commandReply', function(result) {
 		var splitRes = result.split(",");
+		// clearTimeout(requestTimeout);
 
 		var domObj;
 		switch(splitRes[0]) {
 		case 'modeid':
+			$('#error-box').hide();
 			domObj = $('#modeid');
 			domObj.html(splitRes[1]);
+			break;
+		case 'uptime':
+			domObj = $('#status');
+			var h = splitRes[1];
+			var m = splitRes[2];
+			var s = splitRes[3];
+			domObj.html("Device up for: " + h + ":" + m + ":" + s + "(H:M:S)");
 			break;
 		case 'volumeid':
 			domObj = $('#volumeid');
@@ -57,6 +81,10 @@ $(document).ready(function() {
 		case 'tempoid':
 			domObj = $('#tempoid');
 			domObj.val(splitRes[1]);
+			break;
+		case 'noreply':
+			$('#error-box').show();
+			$('#error-text').html("Beatbox C application is no longer running.");
 			break;
 		case 'soundreq':
 		case 'terminate':
@@ -71,4 +99,9 @@ $(document).ready(function() {
 
 function sendCommandViaUDP(message) {
 	socket.emit('daUdpCommand', message);
+
+	// clearTimeout(requestTimeout);
+	// requestTimeout = setTimeout(function() {
+	// 	$('#error-box').show();
+	// }, 3000)
 };
