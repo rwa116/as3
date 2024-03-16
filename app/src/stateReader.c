@@ -50,31 +50,31 @@ static void *stateThread(void *arg) {
         long long currentTime = getTimeInMs();
         switch(pressedDirection) {
             case UP:
-                if(currentTime - lastTimePressedUp > 200) {
+                if(currentTime - lastTimePressedUp > 300) {
                     BeatGenerator_incrementVolume();
                     lastTimePressedUp = currentTime;
                 }
                 break;
             case DOWN:
-                if(currentTime - lastTimePressedDown > 200) {
+                if(currentTime - lastTimePressedDown > 300) {
                     BeatGenerator_decrementVolume();
                     lastTimePressedDown = currentTime;
                 }
                 break;
             case LEFT:
-                if(currentTime - lastTimePressedLeft > 200) {
+                if(currentTime - lastTimePressedLeft > 300) {
                     BeatGenerator_decrementBpm();
                     lastTimePressedLeft = currentTime;
                 }
                 break;
             case RIGHT:
-                if(currentTime - lastTimePressedRight > 200) {
+                if(currentTime - lastTimePressedRight > 300) {
                     BeatGenerator_incrementBpm();
                     lastTimePressedRight = currentTime;
                 }
                 break;
             case IN:
-                if(currentTime - lastTimePressedIn > 200) {
+                if(currentTime - lastTimePressedIn > 300) {
                     int currentBeat = BeatGenerator_getBeat();
                     BeatGenerator_setBeat(currentBeat >= 2 ? 0 : currentBeat + 1);
                     lastTimePressedIn = currentTime;
@@ -83,9 +83,9 @@ static void *stateThread(void *arg) {
             default:
                 break;
         }
-        #define THRESHOLD 24000
+        #define THRESHOLD 20000
         #define Z_POS_THRESHOLD 32000
-        #define Z_NEG_THRESHOLD 8000
+        #define Z_NEG_THRESHOLD 12000
         struct accel_values accelValues = Accelerometer_readValues();
         if(((accelValues.valX > THRESHOLD) || (accelValues.valX < -THRESHOLD)) 
             && (currentTime - lastTimeAccelX > 250)) {

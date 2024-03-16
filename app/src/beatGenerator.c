@@ -26,6 +26,20 @@ static pthread_t beatThreadId;
 static pthread_mutex_t volumeLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t tempoLock = PTHREAD_MUTEX_INITIALIZER;
 
+enum beatNum {
+    BEAT_1,
+    BEAT_1_5,
+    BEAT_2,
+    BEAT_2_5,
+    BEAT_3,
+    BEAT_3_5,
+    BEAT_4,
+    BEAT_4_5,
+    NUM_BEATS,
+};
+
+static void queueNextBeat(enum beatNum bNum);
+
 static void sleepForMs(long long delayInMs);
 
 void BeatGenerator_init(void) {
@@ -117,55 +131,75 @@ void BeatGenerator_setBeat(int newBeat) {
 
 static void *beatThread(void *arg) {
     (void)arg;
+    int msToSleep;
     while(isRunning) {
         //printf("Current BPM = %d, current volume = %d\n", bpm, AudioMixer_getVolume());
-        switch(beat) {
-            case 0: // Off
-                sleepForMs(100);
-                break;
-            case 1: // Standard Beat 
-            {
-                int msToSleep = 60000 / bpm / 2;
-                // Beat 1 / 3
-                AudioMixer_queueSound(&baseDrumData);
-                AudioMixer_queueSound(&hiHatData);
-                sleepForMs(msToSleep);
-                // Beat 1.5 / 3.5
-                AudioMixer_queueSound(&hiHatData);
-                sleepForMs(msToSleep);
-                // Beat 2 / 4
-                AudioMixer_queueSound(&hiHatData);
-                AudioMixer_queueSound(&snareData);
-                sleepForMs(msToSleep);
-                // Beat 2.5 / 4.5
-                AudioMixer_queueSound(&hiHatData);
-                sleepForMs(msToSleep);
-                break;
-            }
-            case 2: // New beat
-            {
-                int msToSleep = 60000 / bpm / 2;
-                // Beat 1 / 3
-                AudioMixer_queueSound(&snareData);
-                sleepForMs(msToSleep);
-                // Beat 1.5 / 3.5
-                AudioMixer_queueSound(&snareData);
-                sleepForMs(msToSleep);
-                // Beat 2 / 4
-                AudioMixer_queueSound(&baseDrumData);
-                sleepForMs(msToSleep);
-                // Beat 2.5 / 4.5
-                AudioMixer_queueSound(&baseDrumData);
-                sleepForMs(msToSleep);
-                break;
-            }
-            default:
-                printf("Error: invalid beat select, only 0, 1, 2 are valid.\n");
-                sleepForMs(1000);
-                break;
+        for(enum beatNum currBeatNum = 0; currBeatNum < NUM_BEATS; currBeatNum++) {
+            queueNextBeat(currBeatNum);
+            msToSleep = 60000 / bpm / 2;
+            sleepForMs(msToSleep);
         }
     }
     return NULL;
+}
+
+// Plays the halfBeatNum'th beat according to the currently selected beat/mode
+static void queueNextBeat(enum beatNum bNum) {
+    switch(beat) {
+        case 0:
+            break;
+        case 1:
+            switch(bNum) {
+                case BEAT_1:
+                case BEAT_3:
+                    AudioMixer_queueSound(&baseDrumData);
+                    AudioMixer_queueSound(&hiHatData);
+                    break;
+                case BEAT_1_5:
+                case BEAT_3_5: 
+                    AudioMixer_queueSound(&hiHatData);
+                    break;
+                case BEAT_2:
+                case BEAT_4: 
+                    AudioMixer_queueSound(&hiHatData);
+                    AudioMixer_queueSound(&snareData);
+                    break;
+                case BEAT_2_5:
+                case BEAT_4_5: 
+                    AudioMixer_queueSound(&hiHatData);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 2:
+            switch(bNum) {
+                case BEAT_1:
+                case BEAT_3:
+                    AudioMixer_queueSound(&snareData);
+                    break;
+                case BEAT_1_5:
+                case BEAT_3_5: 
+                    AudioMixer_queueSound(&snareData);
+                    break;
+                case BEAT_2:
+                case BEAT_4: 
+                    AudioMixer_queueSound(&baseDrumData);
+                    break;
+                case BEAT_2_5:
+                case BEAT_4_5: 
+                    AudioMixer_queueSound(&baseDrumData);
+                    break;
+                default:
+                    break;
+
+            }
+            break;
+        default:
+            printf("Error: invalid beat select, only 0, 1, 2 are valid.\n");
+            sleepForMs(100);
+            break;
+    }
 }
 
 static void sleepForMs(long long delayInMs) {
